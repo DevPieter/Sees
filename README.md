@@ -2,7 +2,7 @@
 
 ### Event creation, calling, and listening made easy!
 
-Sees is a simple event system for Java. It can be used for any project that needs a easy-to-use event system.
+Sees is a simple event system for Java. It can be used for any project that needs an easy-to-use event system.
 
 ## Features
 

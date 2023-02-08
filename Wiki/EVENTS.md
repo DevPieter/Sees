@@ -1,6 +1,6 @@
-### Creating a event
+### Creating an event
 
-It's easy to create a event. Just create a class and implement the `Event` interface.
+It's easy to create an event. Just create a class and implement the `Event` interface.
 
 1. Create a new class.
 2. Implement the `Event` interface.
@@ -20,9 +20,9 @@ public class MyEvent implements Event {
 }
 ```
 
-### Creating a event using records
+### Creating an event using records
 
-You can also create a event using records. Just create a record and implement the `Event` interface.
+You can also create an event using records. Just create a record and implement the `Event` interface.
 
 1. Create a new record.
 2. Implement the `Event` interface.
