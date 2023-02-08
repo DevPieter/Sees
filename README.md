@@ -10,7 +10,7 @@ Sees is a simple event system for Java. It can be used for any project that need
 * Simple to implement
 * Open source
 
-## How to install Sees
+## Installation
 
 ```TODO```
 
