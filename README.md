@@ -1,10 +1,14 @@
 # Sees (Super Easy Event System)
 
-Sees is a simple event system for Java.
+Sees is a super easy event system.
 
-# Events
+## Installation
 
-## Creating a new event
+```TODO```
+
+## Events
+
+### Creating a new event
 
 You can create a new event by implementing the `Event` interface.
 
@@ -37,9 +41,9 @@ public record MyRecordEvent(String message) implements Event {
 }
 ```
 
-# Listeners
+## Listeners
 
-## Creating a new listener
+### Creating a new listener
 
 You can create a new listener by implementing the `Listener` interface.
 
@@ -58,7 +62,7 @@ public class MyListener implements Listener {
 }
 ```
 
-# Registering and calling an event
+## Registering and calling an event
 
 You can register a listener and call an event by using the `Sees` class.
 
