@@ -38,7 +38,7 @@ public record MyRecordEvent(String message) implements Event {
 To call an event, you use an instance of `Sees` and use the `call` method.
 
 1. Get the default instance of `Sees` (or create a new instance).
-2. Call an event. (This method returns a `boolean` value that indicates if the event was cancelled.)
+2. Call an event. (This method returns a `boolean` value that indicates if the event was canceled.)
 3. Done.
 
 ```java
