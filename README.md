@@ -2,6 +2,15 @@
 
 Sees is a super easy event system.
 
+## Table of contents
+
+- [Installation](#installation)
+- [Events](#events)
+    - [Creating a new event](#creating-a-new-event)
+- [Listeners](#listeners)
+    - [Creating a new listener](#creating-a-new-listener)
+- [Registering and calling an event](#registering-and-calling-an-event)
+
 ## Installation
 
 ```TODO```
@@ -30,7 +39,9 @@ public class MyEvent implements Event {
 }
 ```
 
-The code above can be simplified by using a `record` instead of a normal class.
+### Creating a new event using records
+
+You can simplify the creation of a new event by using records.
 
 1. Create a new record.
 2. Implement the `Event` interface.
