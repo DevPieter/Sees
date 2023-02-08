@@ -1,2 +1,1 @@
-# Sees
-Sees is a super easy event system.
+# Sees (Super Easy Event System)
