@@ -75,10 +75,10 @@ public class Main {
         Sees sees = Sees.getInstance();
 
         // Register a new listener.
-        sees.subscribe(new ExampleListener());
+        sees.subscribe(new MyListener());
 
         // Call an event.
-        sees.call(new ExampleEvent("Hello", "World!"));
+        sees.call(new MyEvent("Hello", "World!"));
     }
 }
 ```
