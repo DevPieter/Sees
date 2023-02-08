@@ -7,6 +7,7 @@ Sees is a super easy event system.
 - [Installation](#installation)
 - [Events](#events)
     - [Creating a new event](#creating-a-new-event)
+    - [Creating a new event using records](#creating-a-new-event-using-records)
 - [Listeners](#listeners)
     - [Creating a new listener](#creating-a-new-listener)
 - [Registering and calling an event](#registering-and-calling-an-event)
