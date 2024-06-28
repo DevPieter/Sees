@@ -9,7 +9,7 @@ public class Main {
     public static void main(String[] args) {
 
         Sees sees = Sees.getInstance();
-        sees.subscribe(new ExampleListener());
+        sees.subscribe(new MyListener());
 
         sees.call(new MyEvent("Hello, World! from MyEvent"));
         sees.call(new MyRecordEvent("Hello, World! from MyRecordEvent"));
@@ -32,7 +32,7 @@ class MyEvent implements Event {
 record MyRecordEvent(String message) implements Event {
 }
 
-class ExampleListener implements Listener {
+class MyListener implements Listener {
 
     @EventListener
     public void onMyEvent(MyEvent event) {
