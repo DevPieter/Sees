@@ -5,21 +5,42 @@ import nl.devpieter.sees.Event.Event;
 import nl.devpieter.sees.Listener.Listener;
 
 public class Main {
+
     public static void main(String[] args) {
 
         Sees sees = Sees.getInstance();
         sees.subscribe(new ExampleListener());
 
-        sees.call(new ExampleEvent("Hello", "World!"));
+        sees.call(new MyEvent("Hello, World! from MyEvent"));
+        sees.call(new MyRecordEvent("Hello, World! from MyRecordEvent"));
     }
 }
 
-record ExampleEvent(String name, String message) implements Event {
+class MyEvent implements Event {
+
+    private final String message;
+
+    public MyEvent(String message) {
+        this.message = message;
+    }
+
+    public String getMessage() {
+        return message;
+    }
+}
+
+record MyRecordEvent(String message) implements Event {
 }
 
 class ExampleListener implements Listener {
+
     @EventListener
-    public void onExampleEvent(ExampleEvent event) {
-        System.out.println(event.name() + ": " + event.message());
+    public void onMyEvent(MyEvent event) {
+        System.out.println(event.getMessage());
+    }
+
+    @EventListener
+    public void onMyRecordEvent(MyRecordEvent event) {
+        System.out.println(event.message());
     }
 }
