@@ -4,26 +4,32 @@ import nl.devpieter.sees.Annotations.EventListener;
 import nl.devpieter.sees.Event.CancelableEvent;
 import nl.devpieter.sees.Event.Event;
 import nl.devpieter.sees.Listener.Listener;
+import nl.devpieter.sees.Models.AnnotatedMethod;
 
-import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
 
 public class Sees {
 
-    private static final Sees INSTANCE = new Sees();
+    private static Sees INSTANCE;
 
     public static Sees getInstance() {
+        if (INSTANCE == null) INSTANCE = new Sees();
         return INSTANCE;
     }
 
-    private final List<Listener> listeners = new ArrayList<>();
-
+    private final Map<Listener, List<AnnotatedMethod>> listeners = new HashMap<>();
 
     public void subscribe(Listener listener) {
         if (listener == null) throw new IllegalArgumentException("Listener cannot be null.");
-        this.listeners.add(listener);
+
+        List<AnnotatedMethod> annotatedMethods = Arrays.stream(listener.getClass().getMethods())
+                .filter(method -> method.isAnnotationPresent(EventListener.class))
+                .filter(method -> method.getParameterCount() == 1)
+                .map(method -> new AnnotatedMethod(method, listener))
+                .collect(Collectors.toList());
+
+        this.listeners.put(listener, annotatedMethods);
     }
 
     public void unsubscribe(Listener listener) {
@@ -34,22 +40,20 @@ public class Sees {
     public boolean call(Event event) {
         if (event == null) throw new IllegalArgumentException("Event cannot be null.");
 
-        for (Listener listener : this.listeners) {
-            List<Method> methods = Arrays.stream(listener.getClass().getMethods())
-                    .filter(method -> method.isAnnotationPresent(EventListener.class))
-                    .filter(method -> method.getParameterCount() == 1)
-                    .filter(method -> method.getParameterTypes()[0].isAssignableFrom(event.getClass())).toList();
+        this.listeners.values().stream()
+                .flatMap(Collection::stream)
+                .filter(annotatedMethod -> {
+                    Class<?>[] parameterTypes = annotatedMethod.method().getParameterTypes();
+                    return parameterTypes.length == 1 && parameterTypes[0].isAssignableFrom(event.getClass());
+                })
+                .forEach(annotatedMethod -> {
+                    try {
+                        annotatedMethod.method().invoke(annotatedMethod.listener(), event);
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                });
 
-            for (Method method : methods) {
-                try {
-                    method.invoke(listener, event);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            }
-        }
-
-        if (event instanceof CancelableEvent cancelable) return cancelable.isCancelled();
-        else return false;
+        return event instanceof CancelableEvent cancelable && cancelable.isCancelled();
     }
 }
