@@ -3,7 +3,7 @@ plugins {
     id 'maven-publish'
 }
 
-group 'nl.devpieter.sees'
+group 'nl.devpieter'
 version '1.0.0'
 
 repositories {
@@ -27,7 +27,11 @@ publishing {
     }
     repositories {
         maven {
-            url = layout.buildDirectory.dir('repo')
+            url = findProperty('mavenRepositoryUrl') ?: 'http://localhost:8080/repository'
+            credentials {
+                username = findProperty('mavenRepositoryUsername') ?: 'admin'
+                password = findProperty('mavenRepositoryPassword') ?: 'admin'
+            }
         }
     }
 }
