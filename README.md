@@ -10,9 +10,24 @@ Sees is a simple event system for Java. It can be used for any project that need
 * Simple to implement
 * Open source
 
-## Installation
+## Add Sees to your project
 
-```TODO```
+[![](https://maven.pietr.space/api/badge/latest/releases/nl/devpieter/sees?name=Latest)](https://maven.pietr.space/#/releases/nl/devpieter/sees)
+
+### Gradle
+
+```gradle
+repositories {
+    maven {
+        name "pietrSpaceReleases"
+        url "https://maven.pietr.space/releases"
+    }
+}
+
+dependencies {
+    implementation "nl.devpieter:sees:${version}"
+}
+```
 
 ## Usage
 
