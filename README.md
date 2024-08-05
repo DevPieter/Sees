@@ -31,4 +31,5 @@ dependencies {
 
 ## Usage
 
-You can read the wiki for more information on how to use Sees.
+[//]: # (Link to wiki)
+Examples and documentation can be found in the [wiki](https://github.com/DevPieter/Sees/wiki).
