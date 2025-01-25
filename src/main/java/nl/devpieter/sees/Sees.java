@@ -3,6 +3,7 @@ package nl.devpieter.sees;
 import nl.devpieter.sees.Annotations.EventListener;
 import nl.devpieter.sees.Event.CancelableEvent;
 import nl.devpieter.sees.Event.Event;
+import nl.devpieter.sees.Event.ReturnableEvent;
 import nl.devpieter.sees.Listener.Listener;
 import nl.devpieter.sees.Models.AnnotatedMethod;
 
@@ -60,6 +61,11 @@ public class Sees {
                 });
 
         return event instanceof CancelableEvent cancelable && cancelable.isCancelled();
+    }
+
+    public <T> T callWithResult(ReturnableEvent<T> event) {
+        this.call(event);
+        return event.getResult();
     }
 
     private void sortListeners() {
