@@ -3,34 +3,47 @@ plugins {
     id 'maven-publish'
 }
 
-group 'nl.devpieter'
-version '1.1.0'
+def targetJavaVersion = 21
+
+def hash = System.getenv("GITHUB_SHA")?.substring(0, 7) ?: "dev"
+def isSnapshot = System.getenv('SNAPSHOT_BUILD')?.toBoolean() ?: false
+
+group = maven_group
+archivesBaseName = archives_base_name
+version = "${project_version}" + (isSnapshot ? "-${hash}-SNAPSHOT" : "")
 
 repositories {
     mavenCentral()
 }
 
 dependencies {
-    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.1'
-    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.1'
+    implementation 'org.jetbrains:annotations:26.0.2'
 }
 
-test {
-    useJUnitPlatform()
+tasks.withType(JavaCompile).configureEach {
+    it.options.encoding = "UTF-8"
+    it.options.release.set(targetJavaVersion)
+}
+
+java {
+    toolchain.languageVersion = JavaLanguageVersion.of(targetJavaVersion)
+    withSourcesJar()
+    withJavadocJar()
 }
 
 publishing {
     publications {
         mavenJava(MavenPublication) {
             from components.java
+            artifactId = artifact_id
         }
     }
     repositories {
         maven {
-            url = findProperty('mavenRepositoryUrl') ?: 'http://localhost:8080/repository'
+            url = findProperty('mavenRepositoryUrl')
             credentials {
-                username = findProperty('mavenRepositoryUsername') ?: 'admin'
-                password = findProperty('mavenRepositoryPassword') ?: 'admin'
+                username = findProperty('mavenRepositoryUsername')
+                password = findProperty('mavenRepositoryPassword')
             }
         }
     }
