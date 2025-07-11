@@ -11,6 +11,7 @@ package nl.devpieter.sees.event;
  *
  * <pre>{@code
  * public record UserLoggedInEvent(String username) implements SEvent {
+ * }
  * }</pre>
  */
 public interface SEvent {
