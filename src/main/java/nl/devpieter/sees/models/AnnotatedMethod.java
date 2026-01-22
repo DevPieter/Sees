@@ -1,6 +1,8 @@
 package nl.devpieter.sees.models;
 
+import nl.devpieter.sees.event.SEvent;
 import nl.devpieter.sees.listener.SListener;
+import org.jetbrains.annotations.ApiStatus;
 
 import java.lang.reflect.Method;
 
@@ -14,5 +16,12 @@ import java.lang.reflect.Method;
  * @param listener the listener instance that owns the method
  * @param priority the execution priority of this method
  */
-public record AnnotatedMethod(Method method, SListener listener, int priority) {
+@ApiStatus.Internal
+public record AnnotatedMethod(
+        Method method,
+        SListener listener,
+        Class<? extends SEvent> eventType,
+        int priority,
+        boolean ignoreCancelled
+) {
 }

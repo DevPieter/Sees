@@ -36,5 +36,7 @@ public @interface SEventListener {
      * @return the priority value used to order listeners
      */
     int priority() default 10;
+
+    boolean ignoreCancelled() default true;
 }
 
