@@ -15,9 +15,13 @@ import java.lang.annotation.Target;
  * The {@code priority} attribute determines the order of execution for this listener.
  * Methods with higher priority values are executed before those with lower values.
  * The default priority is {@code 10}.
+ * <p>
+ * The {@code ignoreCancelled} attribute specifies whether the listener should
+ * be invoked for events that have been cancelled. If set to {@code true}, the listener
+ * will be skipped for cancelled events. The default value is {@code true}.
  *
  * <pre>{@code
- * @SEventListener(priority = 50)
+ * @SEventListener(priority = 50, ignoreCancelled = false)
  * public void onUserLoggedIn(UserLoggedInEvent event) {
  *     // Implementation here
  * }
@@ -36,5 +40,15 @@ public @interface SEventListener {
      * @return the priority value used to order listeners
      */
     int priority() default 10;
+
+    /**
+     * Indicates whether the listener should ignore cancelled events.
+     * <p>
+     * If set to {@code true}, the listener will not be invoked for events that have been cancelled.
+     * The default value is {@code true}.
+     *
+     * @return {@code true} if the listener should ignore cancelled events, {@code false} otherwise
+     */
+    boolean ignoreCancelled() default true;
 }
 

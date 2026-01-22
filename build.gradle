@@ -9,7 +9,6 @@ def hash = System.getenv("GITHUB_SHA")?.substring(0, 7) ?: "dev"
 def isSnapshot = System.getenv('SNAPSHOT_BUILD')?.toBoolean() ?: false
 
 group = maven_group
-archivesBaseName = archives_base_name
 version = "${project_version}" + (isSnapshot ? "-${hash}-SNAPSHOT" : "")
 
 repositories {
@@ -21,8 +20,7 @@ dependencies {
 }
 
 tasks.withType(JavaCompile).configureEach {
-    it.options.encoding = "UTF-8"
-    it.options.release.set(targetJavaVersion)
+    options.encoding = "UTF-8"
 }
 
 java {
@@ -40,10 +38,10 @@ publishing {
     }
     repositories {
         maven {
-            url = findProperty('mavenRepositoryUrl')
+            url = uri(providers.gradleProperty("mavenRepositoryUrl").orNull ?: "http://localhost:8081/releases/nl/devpieter/sees")
             credentials {
-                username = findProperty('mavenRepositoryUsername')
-                password = findProperty('mavenRepositoryPassword')
+                username = providers.gradleProperty("mavenRepositoryUsername").orNull
+                password = providers.gradleProperty("mavenRepositoryPassword").orNull
             }
         }
     }
