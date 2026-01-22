@@ -5,11 +5,15 @@ plugins {
 
 def targetJavaVersion = 21
 
-def hash = System.getenv("GITHUB_SHA")?.substring(0, 7) ?: "dev"
-def isSnapshot = System.getenv('SNAPSHOT_BUILD')?.toBoolean() ?: false
+def isSnapshot = providers.environmentVariable("SNAPSHOT_BUILD").map { it.toBoolean() }.orElse(false).get()
+def buildNumber = System.getenv('BUILD_NUMBER') ?: 'dev'
 
 group = maven_group
-version = "${project_version}" + (isSnapshot ? "-${hash}-SNAPSHOT" : "")
+version = "${project_version}" + (isSnapshot ? "-SNAPSHOT+${buildNumber}" : "")
+
+base {
+    archivesName = archives_base_name
+}
 
 repositories {
     mavenCentral()
