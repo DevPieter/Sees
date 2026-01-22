@@ -1,76 +1,193 @@
 package nl.devpieter.sees;
 
-import nl.devpieter.sees.Annotations.EventListener;
-import nl.devpieter.sees.Event.CancelableEvent;
-import nl.devpieter.sees.Event.Event;
-import nl.devpieter.sees.Event.ReturnableEvent;
-import nl.devpieter.sees.Listener.Listener;
-import nl.devpieter.sees.Models.AnnotatedMethod;
+import nl.devpieter.sees.annotations.SEventListener;
+import nl.devpieter.sees.event.SCancelableEvent;
+import nl.devpieter.sees.event.SEvent;
+import nl.devpieter.sees.event.SReturnableEvent;
+import nl.devpieter.sees.exceptions.EventDispatchException;
+import nl.devpieter.sees.listener.SListener;
+import nl.devpieter.sees.models.AnnotatedMethod;
+import nl.devpieter.sees.models.ListenerContainer;
+import org.jetbrains.annotations.Contract;
+import org.jetbrains.annotations.NotNull;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.List;
 import java.util.stream.Collectors;
 
-public class Sees {
+/**
+ * Core class for managing events and listeners in Sees.
+ * <p>
+ * This singleton class handles registration of listeners and dispatching of events
+ * to the appropriate annotated methods. Listeners are executed in order based on
+ * their priority and the priority of the methods annotated with {@link nl.devpieter.sees.annotations.SEventListener}.
+ *
+ * <pre>{@code
+ * Sees sees = Sees.getSharedInstance();
+ * sees.subscribe(new UserListener());
+ * sees.dispatch(new UserLoggedInEvent("Pieter"));
+ * }</pre>
+ */
+public final class Sees {
 
-    private static Sees INSTANCE;
+    private static final Sees SHARED_INSTANCE = new Sees();
 
-    private Map<Listener, List<AnnotatedMethod>> listeners = new LinkedHashMap<>();
+    private final List<ListenerContainer> listeners = new ArrayList<>();
 
+    /**
+     * Returns the singleton instance of Sees.
+     * <p>
+     * This method ensures only one instance of Sees is created and used throughout the application.
+     * You can still create multiple instances, but it is recommended to use the singleton instance
+     * for consistency and to avoid unnecessary complexity in event management.
+     *
+     * @return the singleton instance of Sees
+     * @deprecated use {@link #getSharedInstance()} instead
+     */
+    @Deprecated(since = "1.2.1, use getSharedInstance() instead", forRemoval = true)
     public static Sees getInstance() {
-        if (INSTANCE == null) INSTANCE = new Sees();
-        return INSTANCE;
+        return SHARED_INSTANCE;
     }
 
-    public void subscribe(Listener listener) {
-        if (listener == null) throw new IllegalArgumentException("Listener cannot be null.");
+    /**
+     * Creates a new instance of Sees.
+     * <p>
+     * This method allows the creation of separate Sees instances if needed.
+     * However, it is generally recommended to use the shared singleton instance
+     * via {@link #getSharedInstance()} for consistent event management.
+     *
+     * @return a new instance of Sees
+     */
+    @Contract(" -> new")
+    public static @NotNull Sees createInstance() {
+        return new Sees();
+    }
 
-        List<AnnotatedMethod> annotatedMethods = Arrays.stream(listener.getClass().getMethods())
-                .filter(method -> method.isAnnotationPresent(EventListener.class))
+    /**
+     * Returns the shared singleton instance of Sees.
+     * <p>
+     * This method provides access to the single shared instance of Sees used throughout the application.
+     * It is recommended to use this instance for consistent event management.
+     *
+     * @return the shared singleton instance of Sees
+     */
+    public static Sees getSharedInstance() {
+        return SHARED_INSTANCE;
+    }
+
+    /**
+     * Subscribes a listener to receive events.
+     * <p>
+     * This method scans the provided listener for methods annotated with
+     * {@link nl.devpieter.sees.annotations.SEventListener} and registers them for future event dispatches.
+     * Methods must accept exactly one parameter of a type that implements {@link nl.devpieter.sees.event.SEvent}.
+     * <p>
+     * Listener and method priorities are respected during event execution.
+     *
+     * @param listener the listener to subscribe
+     * @throws NullPointerException if the listener is {@code null}
+     */
+    public synchronized void subscribe(@NotNull SListener listener) {
+        List<AnnotatedMethod> annotatedMethods = Arrays.stream(listener.getClass().getDeclaredMethods())
+                .filter(method -> method.isAnnotationPresent(SEventListener.class))
                 .filter(method -> method.getParameterCount() == 1)
+                .filter(method -> SEvent.class.isAssignableFrom(method.getParameterTypes()[0]))
                 .map(method -> {
-                    EventListener annotation = method.getAnnotation(EventListener.class);
-                    return new AnnotatedMethod(method, listener, annotation.priority());
+                    SEventListener annotation = method.getAnnotation(SEventListener.class);
+                    method.setAccessible(true);
+
+                    return new AnnotatedMethod(
+                            method,
+                            listener,
+                            (Class<? extends SEvent>) method.getParameterTypes()[0],
+                            annotation.priority(),
+                            annotation.ignoreCancelled()
+                    );
                 })
-                .sorted(Comparator.comparingInt(AnnotatedMethod::priority).reversed())
+                .sorted(Comparator.comparingInt(AnnotatedMethod::priority).reversed().thenComparing(am -> am.method().getName()))
                 .collect(Collectors.toList());
 
-        this.listeners.put(listener, annotatedMethods);
-        this.sortListeners();
+        listeners.add(new ListenerContainer(listener, listener.priority(), annotatedMethods));
+        listeners.sort(Comparator.comparingInt(ListenerContainer::priority).reversed().thenComparing(lc -> lc.listener().getClass().getName()));
     }
 
-    public void unsubscribe(Listener listener) {
-        if (listener == null) throw new IllegalArgumentException("Listener cannot be null.");
-        this.listeners.remove(listener);
+    /**
+     * Unsubscribes a previously registered listener.
+     * <p>
+     * The listener and all of its associated annotated methods will no longer receive events after this call.
+     *
+     * @param listener the listener to unsubscribe
+     * @throws NullPointerException if the listener is {@code null}
+     */
+    public synchronized void unsubscribe(@NotNull SListener listener) {
+        listeners.removeIf(container -> container.listener() == listener);
     }
 
-    public boolean call(Event event) {
-        if (event == null) throw new IllegalArgumentException("Event cannot be null.");
+    /**
+     * Dispatches an event to all applicable listeners.
+     * <p>
+     * All methods annotated with {@link nl.devpieter.sees.annotations.SEventListener} that
+     * accept the provided event type (or its supertype) will be invoked.
+     * <p>
+     * If the event is an instance of {@link nl.devpieter.sees.event.SCancelableEvent}, this method returns whether
+     * the event was cancelled during dispatching.
+     *
+     * @param event the event to dispatch
+     * @return {@code true} if the event is cancellable and was cancelled, {@code false} otherwise
+     * @throws NullPointerException if the event is {@code null}
+     */
+    public boolean dispatch(@NotNull SEvent event) {
+        List<ListenerContainer> snapshot;
 
-        this.listeners.values().stream()
-                .flatMap(Collection::stream)
-                .filter(annotatedMethod -> {
-                    Class<?>[] parameterTypes = annotatedMethod.method().getParameterTypes();
-                    return parameterTypes.length == 1 && parameterTypes[0].isAssignableFrom(event.getClass());
-                })
-                .forEach(annotatedMethod -> {
-                    try {
-                        annotatedMethod.method().invoke(annotatedMethod.listener(), event);
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
-                });
+        synchronized (this) {
+            snapshot = new ArrayList<>(listeners);
+        }
 
-        return event instanceof CancelableEvent cancelable && cancelable.isCancelled();
+        boolean wasCancelled = false;
+        SCancelableEvent cancelableEvent = event instanceof SCancelableEvent ce ? ce : null;
+
+        for (ListenerContainer container : snapshot) {
+            for (AnnotatedMethod annotatedMethod : container.methods()) {
+
+                if (!annotatedMethod.eventType().isAssignableFrom(event.getClass())) {
+                    continue;
+                }
+
+                if (wasCancelled && annotatedMethod.ignoreCancelled()) {
+                    continue;
+                }
+
+                try {
+                    annotatedMethod.method().invoke(annotatedMethod.listener(), event);
+                } catch (Exception e) {
+                    throw new EventDispatchException(event.getClass(), annotatedMethod, e);
+                }
+
+                if (!wasCancelled && cancelableEvent != null && cancelableEvent.isCancelled()) {
+                    wasCancelled = true;
+                }
+            }
+        }
+
+        return wasCancelled;
     }
 
-    public <T> T callWithResult(ReturnableEvent<T> event) {
-        this.call(event);
+    /**
+     * Dispatches a returnable event and retrieves its result.
+     * <p>
+     * This method behaves like {@link #dispatch(SEvent)} but is intended for use with
+     * events implementing {@link nl.devpieter.sees.event.SReturnableEvent}. After all listeners have processed
+     * the event, the result value is returned.
+     *
+     * @param event the returnable event to dispatch
+     * @param <T>   the type of the return value
+     * @return the result provided by the dispatched event
+     * @throws NullPointerException if the event is {@code null}
+     */
+    public <T> T dispatchWithResult(@NotNull SReturnableEvent<T> event) {
+        dispatch(event);
         return event.getResult();
-    }
-
-    private void sortListeners() {
-        this.listeners = this.listeners.entrySet().stream()
-                .sorted(Comparator.comparingInt((Map.Entry<Listener, List<AnnotatedMethod>> entry) -> entry.getKey().priority()).reversed())
-                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (a, b) -> a, LinkedHashMap::new));
     }
 }

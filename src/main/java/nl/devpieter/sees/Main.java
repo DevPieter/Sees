@@ -1,94 +1,81 @@
 package nl.devpieter.sees;
 
-import nl.devpieter.sees.Annotations.EventListener;
-import nl.devpieter.sees.Event.Event;
-import nl.devpieter.sees.Event.ReturnableEvent;
-import nl.devpieter.sees.Listener.Listener;
+import nl.devpieter.sees.annotations.SEventListener;
+import nl.devpieter.sees.event.SCancelableEventBase;
+import nl.devpieter.sees.listener.SListener;
+import org.jetbrains.annotations.ApiStatus;
 
-public class Main {
+@ApiStatus.Internal
+public final class Main {
 
     public static void main(String[] args) {
+        Sees sees = Sees.getSharedInstance();
 
-        Sees sees = Sees.getInstance();
-        sees.subscribe(new MyListener());
+        sees.subscribe(new MyListener1());
 
-        sees.call(new MyEvent("Hello, World! from MyEvent"));
-        sees.call(new MyRecordEvent("Hello, World! from MyRecordEvent"));
+        boolean cancelled = sees.dispatch(new UserLoggingInEvent("Pieter"));
 
-        String result = sees.callWithResult(new MyReturnableEvent("Hello, World! from MyReturnableEvent"));
-        System.out.println(result);
-    }
-}
-
-class MyEvent implements Event {
-
-    private final String message;
-
-    public MyEvent(String message) {
-        this.message = message;
+        if (cancelled) {
+            System.out.println("Login was cancelled by a listener.");
+        } else {
+            System.out.println("Login was successful.");
+        }
     }
 
-    public String getMessage() {
-        return message;
-    }
-}
+    public static class UserLoggingInEvent extends SCancelableEventBase {
 
-record MyRecordEvent(String message) implements Event {
-}
+        private final String username;
 
-class MyReturnableEvent implements ReturnableEvent<String> {
+        public UserLoggingInEvent(String username) {
+            this.username = username;
+        }
 
-    private final String message;
-    private String result;
-
-    public MyReturnableEvent(String message) {
-        this.message = message;
+        public String getUsername() {
+            return username;
+        }
     }
 
-    @Override
-    public String getResult() {
-        return result;
-    }
+    public static class MyListener1 implements SListener {
 
-    @Override
-    public void setResult(String result) {
-        this.result = result;
-    }
+        /*
+         * Order:
+         * 1. onUserLoggingIn4 (highest priority)
+         * 2. onUserLoggingIn1 (cancels)
+         * 3. onUserLoggingIn2 (skipped, cancelled)
+         * 4. onUserLoggingIn3
+         * 5. onUserLoggingIn5 (last due to its name, even though same priority as others)
+         *
+         * Sorting is done by:
+         * 1. Priority of Listener
+         * 2. Name of Listener (only if same priority)
+         * 3. Priority of Method
+         * 4. Name of Method (only if same priority)
+         * */
 
-    public String getMessage() {
-        return message;
-    }
-}
+        @SEventListener(ignoreCancelled = false)
+        public void onUserLoggingIn5(UserLoggingInEvent event) {
+            System.out.println("Listener 1, Method 5.");
+        }
 
-class MyListener implements Listener {
+        @SEventListener(ignoreCancelled = false)
+        public void onUserLoggingIn1(UserLoggingInEvent event) {
+            System.out.println("Listener 1, Method 1. (Cancelling event)");
+            event.cancel();
+        }
 
-    @EventListener
-    public void onMyEvent(MyEvent event) {
-        System.out.println(event.getMessage());
-    }
+        @SEventListener(ignoreCancelled = true)
+        public void onUserLoggingIn2(UserLoggingInEvent event) {
+            System.out.println("Listener 1, Method 2.");
+        }
 
-    @EventListener
-    public void onMyRecordEvent(MyRecordEvent event) {
-        System.out.println(event.message());
-    }
+        @SEventListener(ignoreCancelled = false)
+        public void onUserLoggingIn3(UserLoggingInEvent event) {
+            System.out.println("Listener 1, Method 3.");
+        }
 
-    /***
-     * This event listener has the default priority (10).
-     * It will be called before the lower-priority event listeners.
-     */
-    @EventListener
-    public void onMyReturnableEvent(MyReturnableEvent event) {
-        System.out.println(event.getMessage());
-        event.setResult("You said: " + event.getMessage());
-    }
-
-    /***
-     * This event listener has a lower priority (5).
-     * It will be called after the higher-priority event listeners.
-     */
-    @EventListener(priority = 5)
-    public void onMyReturnableEvent2(MyReturnableEvent event) {
-        // Append to the result set by the higher-priority event listener
-        event.setResult(event.getResult() + " (2)");
+        @SEventListener(ignoreCancelled = true, priority = 20)
+        public void onUserLoggingIn4(UserLoggingInEvent event) {
+            System.out.println("Listener 1, Method 4. (Highest priority)");
+        }
     }
 }
