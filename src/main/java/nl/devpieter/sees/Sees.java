@@ -25,7 +25,7 @@ import java.util.stream.Collectors;
  * their priority and the priority of the methods annotated with {@link nl.devpieter.sees.annotations.SEventListener}.
  *
  * <pre>{@code
- * Sees sees = Sees.getInstance();
+ * Sees sees = Sees.getSharedInstance();
  * sees.subscribe(new UserListener());
  * sees.dispatch(new UserLoggedInEvent("Pieter"));
  * }</pre>
